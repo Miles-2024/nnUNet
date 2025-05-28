@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  nnunet-inference:
+    build:
+      context: . # Docker build context is nnunet/docker/
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount local weights for development to avoid rebuilding image for weight changes
+      # Make sure these paths are correct relative to the docker-compose.yml file (which is in nnunet/docker/)
+      - ../weights:/app/weights 
+      # Mount a results folder (optional, good for inspecting output locally)
+      - ../results:/app/results 
+    # GPU configuration (example for NVIDIA)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    environment:
+      - RESULTS_FOLDER=/app/results
+      # Add any other environment variables needed by your nnU-Net setup or inference_app
+      # For example, if nnU-Net needs specific paths:
+      # - nnUNet_raw_data_base=/app/raw_data 
+      # - nnUNet_preprocessed=/app/preprocessed_data
+      # - nnUNet_model_paths_server=/app/model_server 
+
+# TODO:
+# - The GPU configuration in docker-compose is commented out. 
+#   It requires nvidia-docker2 and a compatible Docker version.
+#   For local CPU testing, this is fine. For GPU, it needs to be enabled and configured.
+# - The nnU-Net environment variables (nnUNet_raw_data_base, etc.) might need to be
+#   set according to how the official nnU-Net image expects them, especially if you're
+#   using `nnUNet_predict` directly. The `RESULTS_FOLDER` is used by the FastAPI app.

@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  // Add other user fields as needed
+  projects  Project[]
+  jobs      Job[]
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  files       File[]
+  jobs        Job[]
+  // Add other project fields as needed
+}
+
+model Job {
+  id        String    @id @default(cuid())
+  status    String // e.g., PENDING, PROCESSING, COMPLETED, FAILED
+  model     String // e.g., KiTS, ADPKD
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  project   Project   @relation(fields: [projectId], references: [id])
+  projectId String
+  inputFile File      @relation("InputFile", fields: [inputFileId], references: [id])
+  inputFileId String  @unique
+  result    Result?
+  // Add other job fields as needed
+}
+
+model File {
+  id        String  @id @default(cuid())
+  name      String
+  url       String // GCS URL
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+  jobInput  Job?    @relation("InputFile")
+  jobResult Result? @relation("ResultFile")
+  // Add other file fields as needed
+}
+
+model Result {
+  id         String @id @default(cuid())
+  job        Job    @relation(fields: [jobId], references: [id])
+  jobId      String @unique
+  outputFile File   @relation("ResultFile", fields: [outputFileId], references: [id])
+  outputFileId String @unique
+  // Add other result fields as needed, e.g., metrics
+}

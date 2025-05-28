@@ -1,0 +1,41 @@
+# Dockerfile.web
+# Base image
+FROM node:18-alpine AS base
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy application code
+COPY . .
+
+# Build Next.js application
+RUN pnpm build
+
+# Production image
+FROM node:18-alpine AS production
+
+WORKDIR /app
+
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/package.json ./package.json
+# Copy public folder if it exists and is needed
+# COPY --from=base /app/public ./public
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+
+CMD ["pnpm", "start"]
+
+# TODO:
+# - This is a basic Dockerfile. It might need adjustments for specific Next.js features
+#   or production optimizations (e.g., standalone output mode).
+# - Ensure all necessary files are copied (e.g., public folder, .env files if handled during build).

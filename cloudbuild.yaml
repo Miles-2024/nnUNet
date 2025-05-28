@@ -1,0 +1,94 @@
+steps:
+# Build the Next.js web application
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'build'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/mengzhiyi-medical-web:${COMMIT_SHA}' # TODO: Confirm GCR path
+    - '.' # Assuming Dockerfile for web app is in root or a specified context
+    - '-f'
+    - 'Dockerfile.web' # Placeholder: A Dockerfile for the web app will be needed
+  id: 'Build Next.js App'
+
+# Build the nnU-Net inference service
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'build'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/mengzhiyi-medical-inference:${COMMIT_SHA}' # TODO: Confirm GCR path
+    - './nnunet/docker' # Context for inference Dockerfile
+  id: 'Build Inference Service'
+
+# Push the web application image to Google Container Registry (GCR)
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/mengzhiyi-medical-web:${COMMIT_SHA}']
+  id: 'Push Web App Image'
+
+# Push the inference service image to GCR
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/mengzhiyi-medical-inference:${COMMIT_SHA}']
+  id: 'Push Inference Service Image'
+
+# Deploy to Google Cloud Run (example for web app)
+# This assumes a Cloud Run service named 'mengzhiyi-web'
+# This step would ideally be conditional or managed by a separate deploy pipeline for production
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+    - 'run'
+    - 'deploy'
+    - 'mengzhiyi-web' # TODO: Confirm Cloud Run service name
+    - '--image'
+    - 'gcr.io/$PROJECT_ID/mengzhiyi-medical-web:${COMMIT_SHA}'
+    - '--region'
+    - 'us-central1' # TODO: Confirm region
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated' # For public access, adjust as needed
+  id: 'Deploy Web App to Cloud Run'
+
+# Deploying the inference service (GPU) is more complex.
+# Cloud Run supports GPU now (in preview/beta for some regions).
+# Alternatively, GCE instance template or GKE would be used.
+# This is a placeholder for deploying the inference service.
+# - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+#   entrypoint: gcloud
+#   args:
+#     - 'run'
+#     - 'deploy'
+#     - 'mengzhiyi-inference' # TODO: Confirm Cloud Run service name for inference
+#     - '--image'
+#     - 'gcr.io/$PROJECT_ID/mengzhiyi-medical-inference:${COMMIT_SHA}'
+#     - '--region'
+#     - 'us-central1' # TODO: Confirm region that supports GPU
+#     - '--platform'
+#     - 'managed'
+#     - '--execution-environment'
+#     - 'gen2'
+#     - '--cpu-boost' # If needed
+#     - '--memory'
+#     - '16Gi' # Adjust as needed
+#     - '--cpu'
+#     - '4'    # Adjust as needed
+#     - '--concurrency'
+#     - '10' # Adjust as needed
+#     # GPU settings for Cloud Run (example)
+#     # - '--no-cpu-boost'
+#     # - '--set-env-vars=^#^CLOUD_SDK_RUN_REQUIRE_CPU_BOOST=false' # hack for some previews
+#     # - '--set-cloudsql-instances=your-project:your-region:your-instance' # If using Cloud SQL
+#     # - '--vpc-connector=your-vpc-connector' # If needed
+#     # - '--args=--accelerators=type=nvidia-tesla-t4,count=1' # Example GPU
+#   id: 'Deploy Inference Service to Cloud Run with GPU'
+
+# Note: A Dockerfile for the web app (e.g., Dockerfile.web) is assumed by this cloudbuild.yaml.
+# This file needs to be created.
+
+images:
+- 'gcr.io/$PROJECT_ID/mengzhiyi-medical-web:${COMMIT_SHA}'
+- 'gcr.io/$PROJECT_ID/mengzhiyi-medical-inference:${COMMIT_SHA}'
+
+# TODO:
+# - Replace $PROJECT_ID with actual Google Cloud Project ID.
+# - Create Dockerfile.web for the Next.js application.
+# - Finalize Cloud Run service names, regions, and deployment strategies (especially for GPU inference).
+# - Set up IAM permissions for Cloud Build service account.

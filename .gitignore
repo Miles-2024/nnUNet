@@ -114,3 +114,4 @@ ENV/
 
 *.model
 
+node_modules/

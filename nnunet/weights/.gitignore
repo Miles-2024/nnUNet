@@ -1,0 +1,7 @@
+# nnunet/weights/.gitignore
+*.zip
+*.pth
+*.pt
+*.model
+# Add other large file extensions here
+!placeholder.txt
